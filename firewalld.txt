@@ -1,0 +1,61 @@
+S1:
+default gateway via R1 eth1 = 192.168.111.76 
+ip r add default via 192.168.111.76
+
+
+R1:
+zypper install firewalld
+systemctl enable firewalld
+systemctl start firewalld
+systemctl status firewalld
+
+firewall-cmd --set-default-zone=external 
+firewall-cmd --get-default-zone
+firewall-cmd --add-interface=eth0
+firewall-cmd --list-all
+
+firewall-cmd --add-interface=eth1 --zone=dmz
+firewall-cmd --list-all --zone=dmz
+firewall-cmd --add-masquerade --zone=dmz
+firewall-cmd --list-all --zone=dmz
+
+2 FTP S1: 
+
+zypper in vsftpd
+systemctl start vsftpd.service
+systemctl status vsftpd.service
+systemctl enable vsftpd.service
+
+skonfiguruj vsftpd.conf dla anonimowe:
+
+write_enable=NO
+dirmessage_enable=YES
+nopriv_user=ftpsecure
+local_enable=YES
+anonymous_enable=YES
+anon_world_readable_only=YES
+syslog_enable=YES
+connect_from_port_20=YES
+ascii_upload_enable=YES
+pam_service_name=vsftpd
+listen=NO
+listen_ipv6=YES
+ssl_enable=NO
+rsa_cert_file=
+dsa_cert_file=
+pasv_min_port=30000
+pasv_max_port=30100
+
+firewall-cmd --add-port=21/tcp --permanent
+firewall-cmd --add-port=30000-30100/tcp --permanent
+firewall-cmd --reload
+
+przekierowanie:
+
+R1:
+firewall-cmd --zone=external --add-forward-port=port=21:proto=tcp:toport=21:toaddr=192.168.111.76 --permanent
+firewall-cmd --reload
+
+R1:
+firewall-cmd --add-port=30000-30100/tcp --permanent
+firewall-cmd --zone=external --add-forward-port=port=30000-30100:proto=tcp:toport=30000-30100:toaddr=192.168.111.76 --permanent
